@@ -1,1 +1,4 @@
-const express=require('express');const cors=require('cors');const app=express();app.use(cors());app.use(express.json());app.get('/health',(r,s)=>s.json({ok:true}));app.post('/predict',(r,s)=>{const rnd=Math.random();s.json({pair:r.body.pair||'EURUSD',tf:r.body.tf||'1m',direction:rnd>0.5?'GREEN':'RED',confidence:Math.round(50+rnd*30),trend:rnd>0.5?'UP':'DOWN',avoid:false});});app.listen(process.env.PORT||4000,()=>console.log('Finorix v9 backend'));
+const express=require('express');const cors=require('cors');const app=express();app.use(cors());app.use(express.json());app.get('/health',(r,s)=>s.json({ok:true}));app.post('/predict',(r,s)=>{const rnd=Math.random();s.json({pair:r.body.pair||'EURUSD',tf:r.body.tf||'1m',direction:rnd>0.5?'GREEN':'RED',confidence:Math.round(50+rnd*30),trend:rnd>0.5?'UP':'DOWN',avoid:false});});app.listen(process.env.PORT||4app.get("/", (req, res) => {
+  res.send("Backend is working 🚀");
+});
+000,()=>console.log('Finorix v9 backend')); 
