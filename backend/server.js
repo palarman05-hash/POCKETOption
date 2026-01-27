@@ -25,8 +25,8 @@ app.get("/signal", async (req, res) => {
     const signal = generateSignal(candles);
 
     res.json({ pair, timeframe: tf, ...signal });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
