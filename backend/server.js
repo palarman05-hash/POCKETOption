@@ -1,6 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 
+const { getCandles } = require("./services/marketData");
+const { generateSignal } = require("./logic/signalEngine");
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -13,17 +16,21 @@ app.get("/health", (req, res) => {
   res.json({ ok: true });
 });
 
-app.get("/signal", (req, res) => {
-  res.json({
-    pair: "EURUSD",
-    signal: "CALL",
-    confidence: 72,
-    expiry: "1m",
-    reason: "Demo signal"
-  });
+app.get("/signal", async (req, res) => {
+  try {
+    const pair = req.query.pair || "EUR/USD";
+    const tf = req.query.tf || "1min";
+
+    const candles = await getCandles(pair, tf);
+    const signal = generateSignal(candles);
+
+    res.json({ pair, timeframe: tf, ...signal });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log("Server running on port", PORT);
+  console.log("Server running on", PORT);
 });
