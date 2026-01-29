@@ -3,160 +3,78 @@ import { useState } from "react";
 const API = import.meta.env.VITE_API_URL;
 
 export default function App() {
-  const [pair, setPair] = useState("EURUSD");
-  const [otc, setOtc] = useState(false);
+  const [pair, setPair] = useState("EUR/USD");
+  const [tf, setTf] = useState("1min");
   const [data, setData] = useState(null);
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const getSignal = async () => {
+    if (!API) {
+      setError("API URL missing (VITE_API_URL)");
+      return;
+    }
+
     setLoading(true);
+    setError("");
     setData(null);
+
     try {
       const res = await fetch(
-        `${API}/signal?pair=${otc ? "OTC-" + pair : pair}`
+        `${API}/signal?pair=${pair}&tf=${tf}`
       );
+
+      if (!res.ok) {
+        throw new Error("Backend error");
+      }
+
       const json = await res.json();
       setData(json);
-    } catch (e) {
-      alert("Backend connect nahi ho raha");
+    } catch (err) {
+      setError("Signal fetch failed");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const color =
-    data?.signal === "CALL"
-      ? "#16a34a"
-      : data?.signal === "PUT"
-      ? "#dc2626"
-      : "#6b7280";
-
   return (
-    <div style={styles.app}>
-      <h1 style={styles.title}>Finorix Pro</h1>
+    <div style={{ padding: 20, fontFamily: "Arial" }}>
+      <h2>Finorix Signal App</h2>
 
-      {/* Pair + OTC */}
-      <div style={styles.row}>
-        <select
-          value={pair}
-          onChange={(e) => setPair(e.target.value)}
-          style={styles.select}
-        >
-          <option>EURUSD</option>
-          <option>GBPUSD</option>
-          <option>USDJPY</option>
-          <option>BTCUSD</option>
+      <div>
+        <label>Pair: </label>
+        <select value={pair} onChange={e => setPair(e.target.value)}>
+          <option value="EUR/USD">EUR/USD</option>
+          <option value="GBP/USD">GBP/USD</option>
         </select>
-
-        <label style={styles.otc}>
-          <input
-            type="checkbox"
-            checked={otc}
-            onChange={() => setOtc(!otc)}
-          />
-          OTC
-        </label>
       </div>
 
-      {/* Signal Card */}
-      <div style={styles.card}>
-        {loading && <p>Analyzing market...</p>}
-
-        {!loading && !data && (
-          <p style={{ opacity: 0.7 }}>Click GET SIGNAL</p>
-        )}
-
-        {data && (
-          <>
-            <h2 style={{ ...styles.signal, color }}>{data.signal}</h2>
-
-            <div style={styles.barBg}>
-              <div
-                style={{
-                  ...styles.barFill,
-                  width: `${data.confidence}%`,
-                  background: color,
-                }}
-              />
-            </div>
-
-            <p>Confidence: {data.confidence}%</p>
-            <p>Expiry: {data.expiry}</p>
-            <p style={{ opacity: 0.8 }}>{data.reason}</p>
-          </>
-        )}
+      <div>
+        <label>Timeframe: </label>
+        <select value={tf} onChange={e => setTf(e.target.value)}>
+          <option value="1min">1 Minute</option>
+          <option value="5min">5 Minute</option>
+        </select>
       </div>
 
-      {/* Button */}
-      <button onClick={getSignal} style={styles.btn} disabled={loading}>
-        {loading ? "WAIT..." : "GET SIGNAL"}
+      <button onClick={getSignal} disabled={loading}>
+        {loading ? "Loading..." : "Get Signal"}
       </button>
+
+      {error && (
+        <p style={{ color: "red", marginTop: 10 }}>
+          {error}
+        </p>
+      )}
+
+      {data && (
+        <div style={{ marginTop: 20 }}>
+          <p><b>Signal:</b> {data.signal}</p>
+          <p><b>Confidence:</b> {data.confidence}%</p>
+          <p><b>Trend:</b> {data.trend}</p>
+          <p><b>Reason:</b> {data.reason}</p>
+        </div>
+      )}
     </div>
   );
 }
-
-/* ---------- STYLES ---------- */
-
-const styles = {
-  app: {
-    minHeight: "100vh",
-    background: "#0b0f1a",
-    color: "#e5e7eb",
-    padding: 20,
-    fontFamily: "Arial, sans-serif",
-  },
-  title: {
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  row: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  select: {
-    background: "#111827",
-    color: "#fff",
-    padding: 10,
-    borderRadius: 6,
-    border: "1px solid #374151",
-  },
-  otc: {
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    fontSize: 14,
-  },
-  card: {
-    background: "#111827",
-    borderRadius: 12,
-    padding: 20,
-    textAlign: "center",
-    marginBottom: 20,
-    border: "1px solid #1f2937",
-  },
-  signal: {
-    fontSize: 32,
-    marginBottom: 10,
-  },
-  barBg: {
-    width: "100%",
-    height: 10,
-    background: "#1f2937",
-    borderRadius: 5,
-    marginBottom: 10,
-  },
-  barFill: {
-    height: "100%",
-    borderRadius: 5,
-  },
-  btn: {
-    width: "100%",
-    padding: 15,
-    background: "#2563eb",
-    color: "#fff",
-    border: "none",
-    borderRadius: 10,
-    fontSize: 18,
-    cursor: "pointer",
-  },
-};
