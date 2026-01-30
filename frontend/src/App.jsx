@@ -78,3 +78,65 @@ export default function App() {
     </div>
   );
 }
+import { useEffect, useRef, useState } from "react";
+import { createChart } from "lightweight-charts";
+import "./App.css";
+
+const API = import.meta.env.VITE_API_URL;
+
+export default function App() {
+  const chartRef = useRef();
+  const [data, setData] = useState(null);
+  const [pair, setPair] = useState("EURUSD");
+
+  useEffect(() => {
+    if (!data) return;
+
+    chartRef.current.innerHTML = "";
+    const chart = createChart(chartRef.current, {
+      width: 400,
+      height: 250,
+      layout: { background: { color: "#020617" }, textColor: "white" },
+      grid: { vertLines: { color: "#111" }, horzLines: { color: "#111" } }
+    });
+
+    const series = chart.addCandlestickSeries();
+    series.setData(data.candles);
+
+  }, [data]);
+
+  const getSignal = async () => {
+    const res = await fetch(`${API}/signal?pair=${pair}&tf=1m`);
+    const json = await res.json();
+    setData(json);
+  };
+
+  return (
+    <div className="app">
+      <div className="card">
+        <h1>Finorix Signal</h1>
+
+        <select onChange={e => setPair(e.target.value)}>
+          <option>EURUSD</option>
+          <option>GBPUSD</option>
+          <option>USDJPY</option>
+        </select>
+
+        <button onClick={getSignal}>Get Signal</button>
+
+        <div ref={chartRef} style={{ marginTop: 14 }} />
+
+        {data && (
+          <div className={`signal ${
+            data.avoid ? "avoid" :
+            data.direction === "BUY" ? "buy" : "sell"
+          }`}>
+            <h2>{data.avoid ? "AVOID" : data.direction}</h2>
+            <p>Confidence: {data.confidence}%</p>
+            <p>Trend: {data.trend}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
