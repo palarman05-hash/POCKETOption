@@ -1,37 +1,32 @@
 import { useState } from "react";
 
-const API = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function App() {
-  const [pair, setPair] = useState("EUR/USD");
-  const [tf, setTf] = useState("1min");
+  const [pair, setPair] = useState("EURUSD");
+  const [timeframe, setTimeframe] = useState("1m");
   const [data, setData] = useState(null);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const getSignal = async () => {
-    if (!API) {
-      setError("API URL missing (VITE_API_URL)");
-      return;
-    }
-
     setLoading(true);
     setError("");
     setData(null);
 
     try {
       const res = await fetch(
-        `${API}/signal?pair=${pair}&tf=${tf}`
+        `${API_URL}/signal?pair=${pair}&tf=${timeframe}`
       );
 
       if (!res.ok) {
-        throw new Error("Backend error");
+        throw new Error("Backend response failed");
       }
 
       const json = await res.json();
       setData(json);
     } catch (err) {
-      setError("Signal fetch failed");
+      setError("Signal fetch failed. Backend not responding.");
     } finally {
       setLoading(false);
     }
@@ -41,102 +36,64 @@ export default function App() {
     <div style={{ padding: 20, fontFamily: "Arial" }}>
       <h2>Finorix Signal App</h2>
 
-      <div>
+      {/* Pair Select */}
+      <div style={{ marginBottom: 10 }}>
         <label>Pair: </label>
-        <select value={pair} onChange={e => setPair(e.target.value)}>
-          <option value="EUR/USD">EUR/USD</option>
-          <option value="GBP/USD">GBP/USD</option>
+        <select value={pair} onChange={(e) => setPair(e.target.value)}>
+          <optgroup label="Market">
+            <option value="EURUSD">EUR/USD</option>
+            <option value="GBPUSD">GBP/USD</option>
+            <option value="USDJPY">USD/JPY</option>
+          </optgroup>
+
+          <optgroup label="OTC">
+            <option value="OTC_EURUSD">OTC EUR/USD</option>
+            <option value="OTC_GBPUSD">OTC GBP/USD</option>
+            <option value="OTC_USDJPY">OTC USD/JPY</option>
+          </optgroup>
         </select>
       </div>
 
-      <div>
+      {/* Timeframe */}
+      <div style={{ marginBottom: 10 }}>
         <label>Timeframe: </label>
-        <select value={tf} onChange={e => setTf(e.target.value)}>
-          <option value="1min">1 Minute</option>
-          <option value="5min">5 Minute</option>
+        <select
+          value={timeframe}
+          onChange={(e) => setTimeframe(e.target.value)}
+        >
+          <option value="1m">1 Minute</option>
+          <option value="5m">5 Minute</option>
+          <option value="15m">15 Minute</option>
         </select>
       </div>
 
+      {/* Button */}
       <button onClick={getSignal} disabled={loading}>
         {loading ? "Loading..." : "Get Signal"}
       </button>
 
+      {/* Error */}
       {error && (
         <p style={{ color: "red", marginTop: 10 }}>
           {error}
         </p>
       )}
 
+      {/* Result */}
       {data && (
         <div style={{ marginTop: 20 }}>
           <p><b>Signal:</b> {data.signal}</p>
           <p><b>Confidence:</b> {data.confidence}%</p>
           <p><b>Trend:</b> {data.trend}</p>
           <p><b>Reason:</b> {data.reason}</p>
+
+          {pair.startsWith("OTC") && (
+            <p style={{ color: "orange" }}>
+              ⚠ OTC Pair Detected
+            </p>
+          )}
         </div>
       )}
-    </div>
-  );
-}
-import { useEffect, useRef, useState } from "react";
-import { createChart } from "lightweight-charts";
-import "./App.css";
-
-const API = import.meta.env.VITE_API_URL;
-
-export default function App() {
-  const chartRef = useRef();
-  const [data, setData] = useState(null);
-  const [pair, setPair] = useState("EURUSD");
-
-  useEffect(() => {
-    if (!data) return;
-
-    chartRef.current.innerHTML = "";
-    const chart = createChart(chartRef.current, {
-      width: 400,
-      height: 250,
-      layout: { background: { color: "#020617" }, textColor: "white" },
-      grid: { vertLines: { color: "#111" }, horzLines: { color: "#111" } }
-    });
-
-    const series = chart.addCandlestickSeries();
-    series.setData(data.candles);
-
-  }, [data]);
-
-  const getSignal = async () => {
-    const res = await fetch(`${API}/signal?pair=${pair}&tf=1m`);
-    const json = await res.json();
-    setData(json);
-  };
-
-  return (
-    <div className="app">
-      <div className="card">
-        <h1>Finorix Signal</h1>
-
-        <select onChange={e => setPair(e.target.value)}>
-          <option>EURUSD</option>
-          <option>GBPUSD</option>
-          <option>USDJPY</option>
-        </select>
-
-        <button onClick={getSignal}>Get Signal</button>
-
-        <div ref={chartRef} style={{ marginTop: 14 }} />
-
-        {data && (
-          <div className={`signal ${
-            data.avoid ? "avoid" :
-            data.direction === "BUY" ? "buy" : "sell"
-          }`}>
-            <h2>{data.avoid ? "AVOID" : data.direction}</h2>
-            <p>Confidence: {data.confidence}%</p>
-            <p>Trend: {data.trend}</p>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
